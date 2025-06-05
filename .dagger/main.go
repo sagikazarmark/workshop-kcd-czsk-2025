@@ -26,32 +26,25 @@ func New(
 
 // Build the application.
 func (m *Workshop) Build() *dagger.File {
-	return dag.Container().
-		From("golang").
-		WithWorkdir("/work").
-		WithMountedDirectory(".", m.Source).
-		WithExec([]string{"mkdir", "build"}).
-		WithExec([]string{"go", "build", "-trimpath", "-o", "build/app", "."}).
-		File("/work/build/app")
+	return dag.Go().
+		Build(m.Source, dagger.GoBuildOpts{
+			Trimpath: true,
+		})
 }
 
 // Run tests.
 func (m *Workshop) Test() *dagger.Container {
-	return dag.Container().
-		From("golang").
-		WithWorkdir("/work").
-		WithMountedDirectory(".", m.Source).
-		WithExec([]string{"mkdir", "build"}).
-		WithExec([]string{"go", "test", "-v", "./..."})
+	return dag.Go().
+		WithSource(m.Source).
+		Exec([]string{"go", "test", "-v", "./..."})
 }
 
 // Run linter.
 func (m *Workshop) Lint() *dagger.Container {
-	return dag.Container().
-		From("golangci/golangci-lint").
-		WithWorkdir("/work").
-		WithMountedDirectory(".", m.Source).
-		WithExec([]string{"golangci-lint", "run"})
+	return dag.GolangciLint().
+		Run(m.Source, dagger.GolangciLintRunOpts{
+			Verbose: true,
+		})
 }
 
 // Run all checks.
