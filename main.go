@@ -13,7 +13,7 @@ func main() {
 		_, _ = fmt.Fprintf(
 			w,
 			`
-<h1>Hello Cloud Native Days Romania! <small>(version: %s)</small></h1>
+<h1>Hello KCD Czech & Slovak! <small>(version: %s)</small></h1>
 <p style="font-size: 30px;">Hope you have a great day!</p>
 			`,
 			version,
