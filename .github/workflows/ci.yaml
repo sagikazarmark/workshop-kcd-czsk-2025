@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, module4, module4-solution]
   pull_request:
 
 jobs:
@@ -14,13 +14,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - name: Run pipeline
+        uses: dagger/dagger-for-github@8.0.0
         with:
-          go-version: "1.24"
-
-      - name: Build
-        run: go build .
+          verb: call
+          args: build
+          version: "0.18.9"
 
   test:
     name: Test
@@ -30,13 +29,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - name: Run pipeline
+        uses: dagger/dagger-for-github@8.0.0
         with:
-          go-version: "1.24"
-
-      - name: Test
-        run: go test -v ./...
+          verb: call
+          args: test
+          version: "0.18.9"
 
   lint:
     name: Lint
@@ -46,13 +44,27 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - name: Run pipeline
+        uses: dagger/dagger-for-github@8.0.0
         with:
-          go-version: "1.24"
+          verb: call
+          args: lint
+          version: "0.18.9"
 
-      - name: Lint
-        uses: golangci/golangci-lint-action@v7
+  check:
+    name: Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run pipeline
+        uses: dagger/dagger-for-github@8.0.0
+        with:
+          verb: call
+          args: check
+          version: "0.18.9"
 
   artifacts:
     name: Artifacts
