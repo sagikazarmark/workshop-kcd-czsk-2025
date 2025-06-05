@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/sagikazarmark/workshop-kcd-czsk-2025/.dagger/internal/dagger"
 	"github.com/sourcegraph/conc/pool"
@@ -27,6 +28,7 @@ func New(
 // Build the application.
 func (m *Workshop) Build() *dagger.File {
 	return dag.Go().
+		WithPlatform("linux/amd64").
 		Build(m.Source, dagger.GoBuildOpts{
 			Trimpath: true,
 		})
@@ -70,4 +72,58 @@ func (m *Workshop) Check(ctx context.Context) error {
 	})
 
 	return p.Wait()
+}
+
+// Build a container image.
+func (m *Workshop) BuildContainerImage() *dagger.Container {
+	binary := m.Build()
+
+	return dag.Container().
+		From("alpine:3.21").
+		WithExec([]string{"sh", "-c", "apk add --update --no-cache ca-certificates tzdata"}).
+		WithFile("/usr/local/bin/app", binary).
+		WithEntrypoint([]string{"app"})
+}
+
+// Run the application.
+func (m *Workshop) Run() *dagger.Service {
+	return m.BuildContainerImage().
+		WithExposedPort(8080).
+		AsService()
+}
+
+func (m *Workshop) ReleaseDummy(
+	ctx context.Context,
+	version string,
+	username string,
+) error {
+	repository := fmt.Sprintf("ttl.sh/%s/workshop-kcd-czsk-2025:%s", username, version)
+
+	_, err := m.BuildContainerImage().
+		Publish(ctx, repository)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *Workshop) Release(
+	ctx context.Context,
+	version string,
+	registry string,
+	repository string,
+	username string,
+	password *dagger.Secret,
+) error {
+	repository = fmt.Sprintf("%s/%s:%s", registry, repository, version)
+
+	_, err := m.BuildContainerImage().
+		WithRegistryAuth(registry, username, password).
+		Publish(ctx, repository)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
